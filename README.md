@@ -1,7 +1,7 @@
 # sqlite3_websql_sqlweb_and_wasm
 Take care to include from the sqlweb repo: https://github.com/ujjwalguptaofficial/sqlweb  :
 For webbrowsers Not wasm now, a work-in-progress library? trying to use the best of any available sql engine in the browser. Translates any syntax if necessary. This 
-all is to be used with this in mind that in some cases automatically websql (sqlite3) will be used, yeah websql that is about to be abandoned but now is available in maybe like 95% of browsers, if there is no websql available, it automatically switches of to sqlweb github plugin or manually you can choose sqlweb or websql. Basically sqlite3 syntax can be used (still much work to do left) and it is translated to sqlweb dialect which happily is compatible in some aspects with websql/sqlite3. Some misinformation from me may come from not knowing fully the topic by me :) .
+all is to be used with this in mind that in some cases automatically websql (sqlite3) will be used, yeah websql that is about to be abandoned but now is available in maybe like 95% of browsers, if there is no websql available, it automatically switches of to sqlweb github plugin or manually you can choose sqlweb or websql. Basically sqlite3 syntax can be used (still much work to do left) and it is translated to sqlweb dialect which happily is compatible in some aspects with websql/sqlite3. Some misinformation from me may come from not knowing fully the topic by me :) . I also did some failed attempt to use duckdb WASM sqlite. It is not neccessary at the moment (as far as i know wasm is still not as fast as you would like it to be) to load such libraries. But i have in mind of using WASM libraries in the future.
 
 `html
 <script src="scripts/jsstore.js "></script>
