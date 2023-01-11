@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style type="text/css">
+    .sqlite-info {white-space: pre;position:relative;z-index:1000000;}
+  </style>
+  <script src="sqlite3/condition_sqlite_init.js"></script>
+    <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="condition_data_managing_driver_sqlweb">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>condition_data_managing_driver_sqlweb</title>
+  <link rel="manifest" href="manifest.json">
+    <!--<script src="scripts/jquery.js"></script>--><!-- this is not necessary, remove it after changing the code to not using jquery -->
+    <script src="scripts/jsstore.js "></script>
+    <script src="scripts/sqlweb.js"></script>
+    <!--<script src="scripts/index.js"></script>-->
+    
+    
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    var serviceWorkerVersion = null;
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
+</head>
+<body>
+
+
+
+
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        }
+      }).then(function(engineInitializer) {
+        return engineInitializer.initializeEngine();
+      }).then(function(appRunner) {
+        return appRunner.runApp();
+      });
+    });
+  </script>
+
+<script>
+/*
+const importObject = {
+  imports: { duckdb: (arg) => console.log(arg) },
+};
+WebAssembly.instantiateStreaming(fetch("wasm/duckdb.wasm"), importObject).then(
+  (obj) => {
+    alert('eeeeeeeeeeeeeeeeeeeee');
+    obj.instance.exports.exported_func();
+  }
+
+);
+*/
+  testowazmienna='ziemniak';
+  testowazmiennadwa=50;
+  window.js_typeof= function(variable) {
+    return typeof(variable);
+  }
+
+  ///READ IT!!! READ IT!!!READ IT!!!READ IT!!!
+  ///READ IT!!! READ IT!!!READ IT!!!READ IT!!!
+  ///MUCH OF THE CODE BELOW TRANSLATING SQLITE INTO SQLWEB (GITHUN, BASED ON ISSTORE GITHUN)
+  ///INITIALLY IT WAS TO AUTOMATICALLY CREATE DATABASE WITH TABLES AND INITIAL DATA
+  ///BUT THE REST OF THE QUERIES DONE BY HAND - SELECT, UPDATE, DELETE, WHERE CLAUSE, ETC.
+  ///it was to be used by dart/flutter web app connecting to native js
+  ///AND WHAT'S IMPORTANT WHEN WEBSQL (CHROME BASED BROWSERS HAVE IT) IS NOT AVAILABLE
+  ///THEN SQLWEB WORKAROUND WAS TO BE USED, THE DEVELOPMENT PROBABLY STOPPED
+
+  ///READ IT!!! READ IT!!!READ IT!!!READ IT!!!
+  ///READ IT!!! R EAD IT!!!READ IT!!!READ IT!!!
+  /// there is php script adminer which manages and !EXPORTS! all the db  into sql (sqlite3), to recreate the db anywhere else from scratch
+  /// the code below imports it translating into sqlweb github library dialect (esp. create table)
+  ///but for crud operations:
+  ///you can only use column names without single quotes (') for now in sqlite
+  ///only "insert into" needed hard regexing
+  ///select can be only used with "select *" - ONE STATEMENT
+  ///update, delete, where seem to be much compatible - don't need regex to translate a query
+  ///for non crud operations:
+  ///much more seems to hace chance be compatible - you need to compare sqlweb with sqlite
+  ///you possibly can have a chance for JOIN but for crud it is not necessary
+  ///??? END OF READING
+
+  //alert('type zmiennej:'+typeof(testowazmienna));
+
+  /// data preparing for github sqlweb (written in js not websql in chrome like browsers)
+  /// conversion sqlite/websql to sqlweb syntax github library based on jsstore github library  
+  ///working sqlite2sqlweb_insert_into_regex= /INSERT[\r\n\t\s]*INTO[\r\n\t\s]*['"]([^"']*)['"][\r\n\t\s]*\(([^\)]*)\)[\r\n\t\s]*VALUES[\r\n\t\s]*\((([^\)]*?[']((?<=')[']|['](?=')|[^'])*['])*|[^\)]*)\)/gi
+  ///working sqlite2sqlweb_insert_into_regex= new RegExp('INSERT[\\r\\n\\t\\s]*INTO[\\r\\n\\t\\s]*[\'"]([^"\']*)[\'"][\\r\\n\\t\\s]*\\(([^\\)]*)\\)[\\r\\n\\t\\s]*VALUES[\\r\\n\\t\\s]*\\((([^\\)]*?[\']((?<=\')[\']|[\'](?=\')|[^\'])*[\'])*|[^\\)]*)\\)', 'gi');
+  /// white spaces (in dart language before string r'' var s = r'A string with only \ and $';)
+  const s=String.raw`\r\n\t\s`;
+  /// column list with surrounding parentheses (in dart language before string r'' var s = r'A string with only \ and $';)
+  const c=String.raw`\(([^\)]*)\)`;
+  /// overall values part with surrounding parentheses - in nested checking values will be extracted using more detailed regex into array and assign properly to column names according to sqlweb syntax
+  const v=String.raw`\((([^\)]*?[']((?<=')[']|['](?=')|[^'])*['])*|[^\)]*)\)`; 
+  const sqlite2sqlweb_insert_into_regex_string=String.raw`INSERT[${s}]*INTO[${s}]*['"]([^"']*)['"][${s}]*${c}[${s}]*VALUES[${s}]*${v}[${s}]*[;]*`;
+  const sqlite2sqlweb_insert_into_regex=new RegExp(sqlite2sqlweb_insert_into_regex_string, 'gi');
+  const sqlite2websql_insert_into_regex=new RegExp("("+sqlite2sqlweb_insert_into_regex_string+")", 'gi');
+  const sqlite2sqlweb_create_table_regex_string=String.raw`CREATE[\r\n\t\s]*TABLE[\r\n\t\s]*[\'\"]([^\"\']*)[\'\"][\r\n\t\s]*\(([^\)]*)\)[\r\n\t\s]*[;]*`;
+  const sqlite2sqlweb_create_table_regex=new RegExp(sqlite2sqlweb_create_table_regex_string, 'gi');
+  const sqlite2websql_create_table_regex=new RegExp('('+sqlite2sqlweb_create_table_regex_string+')', 'gi');
+
+  /// only one select in one string, and select is pretty much sqlite compatible so this is pretty enough and very simple and prone to errors regex for now - only for "select * from tablename" - where can be compatible on its own - this doesn't detect the whole statement for now 
+  const sqlite2sqlweb_select_regex=  new RegExp(String.raw`[${s}]*SELECT[${s}]*\*[${s}]*from[${s}]*([^${s}]*)`, 'i');
+  const sqlite2sqlweb_select_change_into = "SELECT FROM $1";
+  ///!!! DON'T NEED UPDATE REGEX FOR NOW. 
+  ///!!! DON'T NEED DELETE REGEX FOR NOW
+
+  ///Splitting part like, we are extracting values to an array: 
+  ///so "VALUES (#####this part inside split, but it done correctly#####)"  
+  const v_extented_split=new RegExp(String.raw`(?=(?:[${s}]*(?:\d+|['](?:(?<=')[']|['](?=')|[^'])*['])*))[${s}]*[,][${s}]*`, 'gi'); 
+  
+  //alert(sqlite2sqlweb_insert_into_regex.toString());
+  
+
+    
+    sqliteTesting=document.createElement('div')
+    sqliteTesting.className="sqlite-info";
+    sqliteTesting.style.wordSpacing='nowrap'
+    document.body.appendChild(sqliteTesting);
+
+
+    function sqlite2sqlweb_insert_into(sqlite3_query) {
+
+      var insert_into_queries=[]
+
+
+      sqlite3_query.replace(sqlite2sqlweb_insert_into_regex, function (match, p1, p2, p3) {
+
+
+                  var columns=p2.split(',');
+                  var values=p3.split(v_extented_split);
+
+                  var columns_values_sqlweb='';
+
+                  
+
+                  for (var i=0;i<columns.length;i++) {
+
+
+                    
+                    columns_values_sqlweb+=columns[i].replace(/['"]/g, '')+':'+values[i]+(i+1<columns.length?',':'');
+                  };
+
+                  insert_into_queries[insert_into_queries.length]= 'INSERT INTO '+p1 + ' VALUES ({' + columns_values_sqlweb + '})'; 
+
+
+                  });
+
+
+                  return insert_into_queries;
+
+                  
+    }
+
+
+    
+
+
+
+
+function sqlite2sqlweb_create_table(sqlite3_query) {
+
+var create_table_queries=''
+
+/// !!! EVIDENTLY MAKESHIFT DROP TABLE REGEX RULE - IMPROVE  
+sqlite3_query.replace(
+  /[\t\s\r\n]*DROP[\t\s\r\n]*?TABLE[\t\s\r\n]*?IF[^\r\n]*[\r\n]*/g, ''
+).replace(sqlite2sqlweb_create_table_regex, function (match, p1, p2) {
+
+  create_table_queries+= 'DEFINE TABLE '+p1 + '(' +
+
+    (p2+',').replace(/[\r\n\t\s]*[\'\"]([^\"\']*?)[\'\"][\r\n\t\s]*([a-zA-Z]*)[\r\n\t\s]*([^\,)]*?)([\,])/gi, function(match, r1,r2,r3,r4) {
+
+      return "\n"+r1+' '+r2.replace(/integer/i,'number').replace(/text|blob/i,'string')+' '+r3.replace(/not[\r\n\t\s]+?null/i, 'notNull').replace(/(?<!not)null/i,'').replace(/primary[\r\n\t\s]+?key/i,'primaryKey')+r4;
+
+    }).slice(0, -1)
+
+    + ');'
+
+
+  })
+
+  return create_table_queries;
+
+}
+
+
+
+
+
+
+
+
+            
+      
+
+
+
+function sqlite2websql_create_table(sqlite3_query) {
+
+var create_table_queries=[]
+
+/// !!! EVIDENTLY MAKESHIFT DROP TABLE REGEX RULE - IMPROVE  
+sqlite3_query.replace(
+  /[\t\s\r\n]*DROP[\t\s\r\n]*?TABLE[\t\s\r\n]*?IF[^\r\n]*[\r\n]*/g, ''
+).replace(sqlite2websql_create_table_regex, function (match, p1, p2) {
+
+    create_table_queries[create_table_queries.length]= p1.replace(/^[\s\t\n\r]*create[\s\t\n\r]*table(?![\s\t\n\r]*if)/i, 'CREATE TABLE IF NOT EXISTS ');
+
+})
+
+
+  return create_table_queries;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function sqlite2websql_insert_into(sqlite3_query) {
+
+  var insert_into_queries=[]
+
+
+  sqlite3_query.replace(sqlite2websql_insert_into_regex, function (match, p1, p2, p3) {
+        insert_into_queries[insert_into_queries.length]= p1
+  });
+
+
+  return insert_into_queries;
+
+      
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    //alert(sqlite2sqlweb_create_table(condition_sqlite_init))
+    condition_sqlite_init_1=sqlite2sqlweb_create_table(condition_sqlite_init)
+    condition_sqlite_init_2=sqlite2sqlweb_insert_into(condition_sqlite_init)
+                
+    sqliteTesting.innerHTML=condition_sqlite_init_1.toString()+condition_sqlite_init_2.toString();
+
+
+
+
+
+
+
+
+    if (typeof(openDatabase) == 'function') {
+      is_websql_enabled=true
+    } else {
+      is_websql_enabled=false
+    }
+    
+
+
+    async function open_sqlweb_db(db_name) {
+      const db = new JsStore.Connection(new Worker('scripts/jsstore.worker.js'));
+      
+      db.db_name=db_name;
+      
+
+
+      db.is_websql=false;
+      // Register sqlweb
+      db.addPlugin(SqlWeb.default);
+
+      db.does_db_exist=false;
+      try{      
+        db.does_db_exist = await db.$sql.run('ISDBEXIST '+db.db_name);
+        console.log('open_sqlweb_db(): db.does_db_exist'+db.does_db_exist)
+        if (db.does_db_exist==true) await db.$sql.run('OPENDB ' + db.db_name);
+      } catch (e) {
+        console.log(e.message);
+        return false;
+      }
+
+
+
+
+      return db;
+    }
+
+    /// https://www.tutorialspoint.com/html5/html5_web_sql.htm
+    async function open_websql_db(db_name) {
+      var db = openDatabase(db_name, '1.0', db_name, 20 * 1024 * 1024);
+//SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';
+
+      db.does_db_exist= await new Promise((resolve, reject) => {
+
+          db.transaction(function (tx) { 
+                console.log('open db here 2');
+                //tx.executeSql(full_sqllite3_init_sql);
+
+                  tx.executeSql("SELECT name FROM sqlite_master", [], function (tx, results) { 
+                  var len = results.rows.length; 
+                  var msg = "<p>Found rows: " + len + "</p>"; 
+                  console.log(results.rows.toString())
+                  console.log(msg); 
+
+                  var columns_counter=0;
+                  for (var i = 0; i < len; i++) {
+                    item=results.rows.item(i)
+                    for (var column in item) {
+                        console.log('column: '+column+item[column])
+                        if (item[column].indexOf('__WebKitDatabaseInfoTable__')!=-1) {
+                          columns_counter++;
+                          console.log('columns_counter'+columns_counter)
+                        }                       
+                    }  
+                     
+                    //console.log(results.rows.item(i).log ); 
+                  } 
+                          console.log('open db i='+i)
+                  if (i==2&&columns_counter==2) {
+                    console.log('open_websql_db, db.does_db_exist=false; we can create tables of the db if init_websql_db function is invoked');
+                    resolve(false)
+                  } else {
+                    console.log('open_websql_db, db.does_db_exist=true; we won\'t create tables of the db if init_websql_db function is invoked');
+                    resolve(true);
+                  }   
+                }, function (e) {
+                    reject(e)
+                });
+                
+                console.log('open db here 3');
+              }, function(a,b) {// first is error function - somehow different way than Promise syntax
+                  console.log('open db error')
+                  console.log(a)
+                  console.log(b)
+                  //reject(false);
+              }, function(a,b) {// second is success function - somehow different way than Promise syntax
+                  console.log('open db success')
+                  console.log(a)
+                  console.log(b)
+                  //resolve(true);
+              });              
+
+
+
+          });
+
+
+
+
+
+//zobacz czy nie musisz użyć ineego sposobu dla websql - na tym etapie nie wiesz jakiej konkretnie tabeli szukać https://stackoverflow.com/questions/1601151/how-do-i-check-in-sqlite-whether-a-table-exists
+      alert('to jest funkcja typu async, więc na wzór open_sqlweb_db (w tym nazewnictwo zmiennych) musisz sprawdzić czy itnieje choćby jedna tabela (może więcej jest nawet jak nie zdefiniujesz), jak nie istnieje to przepuszczasz init i insert into, jak są już tabele to przynajmniej nie wywołuj poraz kolejny insert into')
+
+      db.db_name=db_name;
+      db.is_websql=true;
+      return db; 
+    }
+
+    /// global automaticly opening sqlite3 syntax db it chooses sqlweb or websql if available
+    /// watch out - this function returns db pointer but alwo assigns default window.sqlite3_db pointer variable;
+    /// non Promise/Future return - just gets you a pointer which sqlweb and websql does
+    function open_sqlite3_db(db_name) {
+        window.sqlite3_db=is_websql_enabled?open_websql_db(db_name):open_sqlweb_db(db_name)
+        return window.sqlite3_db;
+    }
+
+
+    /// adminer sql full export is passed here this will create db with tables and with initial insert into data.  
+    function init_sqlweb_db(db_pointer, full_sqllite3_init_sql) {
+
+    var promises=[]
+
+    // this assumes that db with tables were already created  
+    if (db_pointer.does_db_exist==true) {
+      console.log('sqlweb: db already exists so it is assumed that tables are already defined too');
+      return Promise.resolve(true);
+    } else {
+
+      console.log('sqlweb: db doesn\'t exist so we create the db and tables');
+
+      //console.log(condition_sqlite_init_splitted[0]);
+      //console.log(condition_sqlite_init_splitted[2]);
+      var preparedstatment="DEFINE DB "+db_pointer.db_name+";\n"+condition_sqlite_init_1
+
+      console.log('q1 ala ma kota1:'+preparedstatment);
+      var query = new db_pointer.$sql.Query(
+      preparedstatment//"DELETE FROM Student WHERE Id='@studentId'"
+      //+"\n"+condition_sqlite_init_splitted[2]//"DELETE FROM Student WHERE Id='@studentId'"
+      );
+
+
+      //query.map("@studentId", Number(studentId));
+      console.log('q1 ala ma kota');
+      try {
+        //alert('ptr'+preparedstatment)
+        promises[promises.length]=db_pointer.$sql.run(query);
+        promises[promises.length-1].then(function (rowsDeleted) {
+
+                  console.log('q2');
+                  console.log('whatever:');
+                  console.log(rowsDeleted);
+
+
+
+
+              }).catch(function (error) {
+                  console.log('q3');
+                  console.log('init_sqlweb_db() error:'+ error.message);
+                  alert(error.message);
+              });
+
+
+
+              for (var i=0;i<condition_sqlite_init_2.length;i++) {
+                    //alert('ptr'+condition_sqlite_init_2[i])
+
+                      let query = new db_pointer.$sql.Query(
+                        condition_sqlite_init_2[i]//"DELETE FROM Student WHERE Id='@studentId'"
+                      //+"\n"+condition_sqlite_init_splitted[2]//"DELETE FROM Student WHERE Id='@studentId'"
+                      );
+
+                      //query.map("@studentId", Number(studentId));
+                      console.log('q1insert ala ma kota');
+                      try {
+                          promises[promises.length]=db_pointer.$sql.run(query);
+                          promises[promises.length-1].then(function (rowsDeleted) {
+                              console.log('q2insert');
+                              console.log('whatever:');
+                              console.log(rowsDeleted);
+                          }).catch(function (error) {
+                              console.log('q3insert');
+                              console.log('whatever error:');
+                              console.log(err);
+                              alert(error.message);
+                          });
+
+                      } catch (e) {
+                          console.log('test55555555'+e);
+                          console.log('est');
+                      }
+
+                  }    
+
+
+
+
+
+
+
+
+
+          } catch (e) {
+              console.log('test333333'+e);
+              console.log('est');
+          }
+
+
+          promises[promises.length]=db_pointer.$sql.run('OPENDB ' + db_pointer.db_name);
+
+          //alert(promises+'#'+promises.length)
+          console.log('promises list:'+promises)
+          var promises_group=Promise.all(promises)
+
+          //promises_group.promises=promises;
+          return promises_group;
+
+      }
+    }    
+
+
+    /// see the foregoing init_sqlweb_db() function description  
+    function init_websql_db(db_pointer, full_sqllite3_init_sql) {
+
+      // this assumes that db with tables were already created  
+      if (db_pointer.does_db_exist==true) {
+        console.log('websql: db already exists so it is assumed that tables are already defined too');
+        return Promise.resolve(true);
+      } else { 
+
+        console.log('init_websql_db() here 1');
+        const queries_create_table=sqlite2websql_create_table(full_sqllite3_init_sql)
+        const queries_insert_into=sqlite2websql_insert_into(full_sqllite3_init_sql)
+
+
+
+        return new Promise((resolve, reject) => {
+            //resolve("Success!"); 
+
+            db_pointer.transaction(function (tx) { 
+              console.log('init_websql_db() here 2');
+              //tx.executeSql(full_sqllite3_init_sql);
+
+
+
+              for (var i=0;i<queries_create_table.length;i++) {    
+                //console.log('init_websql_db() query: '+queries_create_table[i])
+                tx.executeSql(queries_create_table[i]);
+              }
+              for (var i=0;i<queries_insert_into.length;i++) {    
+                //console.log('init_websql_db() query: '+queries_insert_into[i])
+                tx.executeSql(queries_insert_into[i]);
+              }
+              
+              console.log('init_websql_db() here 3');
+            }, function(a,b) {// first is error function - somehow different way than Promise syntax
+                console.log('init_websql_db init error - one db recreate sql passed at once')
+                console.log(a)
+                console.log(b)
+                reject(false);
+            }, function(a,b) {// second is success function - somehow different way than Promise syntax
+                console.log('init_websql_db init success - one db recreate sql passed at once')
+                console.log(a)
+                console.log(b)
+                resolve(true);
+            });              
+
+
+
+        });
+
+      }
+
+    }    
+
+
+    function init_sqlite3_db(db_pointer, full_sqllite3_init_sql) {
+      return db_pointer.is_websql? 
+          init_websql_db(db_pointer, full_sqllite3_init_sql) 
+        :
+          init_sqlweb_db(db_pointer, full_sqllite3_init_sql); 
+    }    
+
+
+    function query_sqlweb_db(db_pointer, sqlite3_query) {
+        //Returns ofcourse a Promise
+        return db_pointer.$sql.run(db_pointer.$sql.Query(sqlite3_query));
+    }
+
+    function query_websql_db(db_pointer, sqlite3_query) {
+        return new Promise((resolve, reject) => {
+            //resolve("Success!"); 
+
+            db_pointer.transaction(function (tx) { 
+              console.log('query_websql_db() here 2');
+              //tx.executeSql(full_sqllite3_init_sql);
+
+              tx.executeSql(sqlite3_query, [], function(t, data) {
+                console.log('query_websql_db(): success, data: ');
+                resolve(data)
+              }, function(t, error) {
+                console.log('query_websql_db(): error, data: ');
+                resolve(error)
+              });
+              
+              console.log('query_websql_db() here 3');
+            }, function(a,b) {// first is error function - somehow different way than Promise syntax
+                console.log('sqlite3_query error')
+                console.log(a)
+                console.log(b)
+                //reject(false);
+            }, function(a,b) {// second is success function - somehow different way than Promise syntax
+                console.log('sqlite3_query success - one db recreate sql passed at once')
+                console.log(a)
+                console.log(b)
+                //resolve(true);
+            });              
+
+
+
+        });
+
+
+    }
+
+    function query_sqlite3_db(db_pointer, sqlite3_query) {
+
+      return db_pointer.is_websql? 
+          query_websql_db(db_pointer, sqlite3_query) 
+        :
+          query_sqlweb_db(db_pointer, sqlite3_query); 
+  
+
+    }
+
+
+    alert('implement and test query_..._db() functions\ndont forget automatic global functions like init_sqlite3_db(), query_sqlite3_db() which dart language connects to ')
+
+    /// non Promise/Future return - just gets you a pointer which sqlweb and websql does
+    //db=open_sqlite3_db('test15');
+    open_sqlweb_db("test4534567891").then((db_sqlweb) => {
+
+        init_sqlweb_db_promise=init_sqlweb_db(db_sqlweb, condition_sqlite_init, success_error_listeners=[]) 
+        init_sqlweb_db_promise.then((result) => {
+          console.log('init_sqlweb_db_promise success, as expected returns true: '+result)
+        }).catch((error) => {
+          alert('init_sqlweb_db_promise error, : '+error)
+        });
+
+
+    }); 
+
+
+
+
+    console.log('init_websql_db() and init_sqlweb_db() work similarly but init_websql_db() returned promise group which have empty .promises property');
+
+    open_websql_db("test4534567891").then(function (db_websql) {
+
+      init_websql_db_promise=init_websql_db(db_websql, condition_sqlite_init, success_error_listeners=[]) 
+      init_websql_db_promise.then((result) => {
+        console.log('init_websql_db_promise success, and as expected group promise returns true: '+result)
+      }).catch((error) => {
+        alert('init_websql_db_promise error, : '+error)
+      });
+
+
+    }) 
+
+
+
+
+
+</script>
+
+
+
+
+</body>
+</html>
